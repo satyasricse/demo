@@ -1,0 +1,195 @@
+<!doctype html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title> Database Application</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"
+            integrity="sha512-KZmyTq3PLx9EZl0RHShHQuXtrvdJ+m35tuOiwlcZfs/rE7NZv29ygNA8SFCkMXTnYZQK2OX0Gm2qKGfvWEtRXA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.min.js"
+            integrity="sha512-WW8/jxkELe2CAiE4LvQfwm1rajOS8PHasCCx+knHG0gBHt8EXxS6T6tJRTGuDQVnluuAvMxWF4j8SNFDKceLFg=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" integrity="sha512-b2QcS5SsA8tZodcDtGRELiGv5SaKSk1vDHDaQRda0htPYWZ6046lr3kJ5bAAQdpV2mmA/4v0wQF9MyU6/pDIAg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script th:src="@{/homecontroller.js}"></script>
+    <!--<style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+    </style>-->
+</head>
+<body ng-app="myapp">
+
+<div ng-controller="MyController" class="container">
+    <h2> Library Management System</h2>
+    <div>
+        <button ng-click="showAddBorrower()">Add Borrower</button>
+<!--        <button ng-click="showAddBook()">Add Book</button>-->
+        <button ng-click="showSearchBook()">Search Book</button>
+        <button ng-click="showCheckoutBook()">Check Out</button>
+        <button ng-click="showCheckinBook()">Check In</button>
+        <button ng-click="showFines()">Show/Refresh Fines</button>
+        <button ng-click="showPayFines()">Pay Fines</button>
+    </div>
+    </br>
+    <div ng-if="action == 'check-out'" class="">
+        <div class="alert alert-danger" ng-if="checkOutErrorMsg">{{checkOutErrorMsg}}</div>
+        <div class="text-success" ng-if="checkoutSuccessMsg">Book checked out successfully</div>
+        <fieldset>
+            <legend>Check out book:</legend>
+            <div><label>ISBN:</label> <input name="checkOutModel-isbn" type="text" ng-model="checkOutModel.isbn"/>
+            </div>
+            <div><label>Card Num:</label> <input name="checkOutModel-cardNo" type="text"
+                                                 ng-model="checkOutModel.cardId"/>
+            </div>
+            <div>
+                <button ng-click="checkoutBook()">Submit</button>
+            </div>
+        </fieldset>
+        </br>
+    </div>
+
+    <div ng-if="action == 'search-book' || action == 'check-out'">
+        Search Book: <input type="text" ng-model="bookModel.searchText"/>
+        <button type="button" ng-click="searchBook()"> Search</button>
+        <div ng-if="books && books.length>0">
+            <span> Showing search results for {{bookModel.searchText}}</span>
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <td>ISBN</td>
+                    <td>Title</td>
+                    <td>Author</td>
+                    <td>Book Availability Status</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="book in books">
+                    <td>{{book.isbn}}</td>
+                    <td>{{book.title}}</td>
+                    <td>{{book.author}}</td>
+                    <td>{{book.availableStatus ? 'Available' : 'Not Available'}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div ng-if="books && books.length == 0">
+            No results found!
+        </div>
+        </br>
+    </div>
+
+
+    <div ng-if="action == 'add-book'">
+        <div class="text-success" ng-if="createBookSuccess"> New Book added successfully!</div>
+        <div class="alert alert-danger" ng-if="createBookError"> Error creating new book, duplicate entry</div>
+        <div><label>ISBN10:</label> <input name="ISBN10" type="text" ng-model="newBook.isbn"/>    </div>
+            <div><label>Title:</label> <input type="text" ng-model="newBook.title"/></div>
+            <div><label>Author:</label> <input type="text" ng-model="newBook.name"/></div>
+            <div><label>Cover:</label> <input type="text" ng-model="newBook.cover"/></div>
+            <div><label>Publisher:</label> <input type="text" ng-model="newBook.publisher"/></div>
+            <div><label>Pages:</label> <input type="text" ng-model="newBook.pages"/></div>
+            <div>
+                <button ng-click="createNewBook()">Create</button>
+            </div>
+        </br>
+    </div>
+
+    <div ng-if="action == 'check-in'">
+        <div class="text-success" ng-if="checkInSuccessMsg">Book Checked in successfully</div>
+        <div class="alert alert-danger" ng-if="checkInErrorMsg">{{checkInErrorMsg}}</div>
+        <div>Locate Checked out book (Search by ISBN,CardNo,BorrowerName): <input type="text" ng-model="checkedInBookModel.searchText"></div>
+        <button type="button" ng-click="getCheckedInBooks()"> Search</button>
+        <div ng-if="checkedInBooks && checkedInBooks.length>0">
+            <span> Showing search results for {{checkedInBookModel.searchText}}</span>
+            <table class="table">
+                <thead>
+                <tr>
+                    <td>isbn</td>
+                    <td>Borrower CardNo</td>
+                    <td>Name</td>
+                    <td>Fine</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="book in checkedInBooks">
+                    <td>{{book.isbn}}</td>
+                    <td>{{book.cardId}}</td>
+                    <td>{{book.bname}}</td>
+                    <td>{{book.fineAmt || 0.0}}</td>
+                    <td>
+                        <span ng-if="book.fineAmt && !book.paid">Pay Fine</span>
+                        <span ng-if="!book.fineAmt || book.paid">NO DUE</span></td>
+                    <td>
+                        <button ng-click="checkIn(book.isbn,book.cardId)">Check In</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div ng-if="checkedInBooks && checkedInBooks.length == 0">
+            No results found!
+        </div>
+        </br>
+    </div>
+
+    <div ng-if="action=='add-borrower'">
+        <div class="text-success" ng-if="addBorrowerSuccssMsg"> New Borrower created successfully!</div>
+        <div class="alert alert-danger" ng-if="addBorrowerErrorMsg"> {{addBorrowerErrorMsg}}</div>
+        <fieldset>
+            <legend>New Borrower Addition:</legend>
+            <div><label>Full Name:</label> <input name="fname" type="text" ng-model="newBorrower.bName"/>
+            </div>
+            <div><label>SSN:</label> <input type="text" ng-model="newBorrower.ssn"/></div>
+            <div><label>address:</label> <input type="text" ng-model="newBorrower.address"/></div>
+            <div>
+                <button ng-click="createNewBorrower()">Create</button>
+            </div>
+        </fieldset>
+        </br>
+    </div>
+
+    <div ng-if="action == 'show-fines'">
+        <div> Current Fines:</div>
+        <div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <td>Card Id</td>
+                    <td>BookId</td>
+                    <td>Fine Amount</td>
+                    <td>Paid Status</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="fine in fines">
+                    <td>{{fine.cardId}}</td>
+                    <td>{{fine.isbn}}</td>
+                    <td>{{fine.fineAmount}}</td>
+                    <td>{{fine.paid ? 'PAID' : 'NOT PAID'}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        </br>
+    </div>
+    <div ng-if="action=='pay-fine'">
+        <div><input type="text" placeholder="search by card id" ng-model="paymentModel.searchText"/>
+            <button ng-click="getFineAmount()">Search</button>
+        </div>
+        </br>
+        <span class="text-success" ng-if="makePaymentSuccess">Payment made successfully</span>
+        <div class="alert alert-danger" ng-if="paymentFineObj && paymentFineObj.paymentAmount && paymentFineObj.paymentAmount >0">
+            {{paymentModel.searchText}} is due of payment {{paymentFineObj.paymentAmount}}
+            <button ng-click="makePayment(paymentFineObj)">MakePayment</button>
+        </div>
+        <div ng-if="noFinePmtRecord" class="text-success">
+            No results found!
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
